@@ -3,100 +3,147 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perang Tank - Game Perang</title>
+  <title>Perang POV - Battlefield</title>
   <style>
     body {
       margin: 0;
-      background: #0f1b0f;
-      color: white;
+      background: #000;
+      overflow: hidden;
       font-family: Arial, sans-serif;
-      text-align: center;
     }
     canvas {
-      border: 4px solid #4a7043;
+      display: block;
       image-rendering: pixelated;
-      margin: 20px auto;
-      background: #1a3a1a;
     }
-    h1 { margin: 10px; color: #ff4444; }
-    .info {
-      font-size: 20px;
-      margin: 10px;
+    .hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      color: white;
+      font-size: 18px;
+      text-shadow: 2px 2px 4px black;
+      pointer-events: none;
+    }
+    .crosshair {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      color: lime;
+      font-size: 30px;
+      pointer-events: none;
+      text-shadow: 0 0 6px lime;
+    }
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: red;
+      font-size: 60px;
+      display: none;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <h1>⚔️ PERANG TANK ⚔️</h1>
-  <div class="info">
-    Nyawa: <span id="health">100</span> | 
-    Skor: <span id="score">0</span> | 
-    Level: <span id="level">1</span>
+
+  <canvas id="game"></canvas>
+  
+  <div class="hud">
+    Nyawa: <span id="health">100</span> &nbsp;&nbsp;&nbsp;
+    Skor: <span id="score">0</span> &nbsp;&nbsp;&nbsp;
+    Musuh: <span id="enemies">0</span>
   </div>
-  <canvas id="game" width="800" height="500"></canvas>
-  <p>Gunakan <b>ARROW KEYS</b> atau <b>WASD</b> untuk gerak • <b>MOUSE</b> untuk tembak</p>
+  <div class="crosshair">+</div>
+
+  <div class="game-over" id="gameover">
+    GAME OVER<br>
+    <span style="font-size:30px">Skor Akhir: <span id="finalscore">0</span></span><br><br>
+    <small>Klik untuk main lagi</small>
+  </div>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     
-    let player = { x: 100, y: 250, width: 40, height: 30, speed: 5, health: 100 };
+    // Ukuran landscape
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let player = { health: 100, score: 0 };
     let bullets = [];
     let enemies = [];
     let particles = [];
-    let score = 0;
-    let level = 1;
-    let keys = {};
-    let mouse = { x: 400, y: 250 };
+    let angle = 0;           // sudut pandang horizontal
     let gameOver = false;
 
-    // Kontrol keyboard
-    window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-    window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-
-    // Kontrol mouse
-    canvas.addEventListener('mousemove', e => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
+    // Mouse lock untuk POV
+    canvas.addEventListener('click', () => {
+      if (!gameOver) canvas.requestPointerLock();
+      else location.reload();
     });
 
-    canvas.addEventListener('click', () => {
-      if (!gameOver) shoot();
+    document.addEventListener('pointerlockchange', () => {
+      if (!document.pointerLockElement) {
+        // Pause jika keluar dari pointer lock
+      }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (document.pointerLockElement && !gameOver) {
+        angle -= e.movementX * 0.15; // sensitivitas mouse
+      }
+    });
+
+    // Tembak dengan klik kiri
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && document.pointerLockElement && !gameOver) {
+        shoot();
+      }
     });
 
     function shoot() {
-      const dx = mouse.x - (player.x + 30);
-      const dy = mouse.y - (player.y + 15);
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      
       bullets.push({
-        x: player.x + 30,
-        y: player.y + 15,
-        vx: (dx/dist) * 12,
-        vy: (dy/dist) * 12,
-        life: 60
+        x: canvas.width/2,
+        y: canvas.height/2 + 50,
+        speed: 25,
+        life: 40
+      });
+      
+      // Efek muzzle flash
+      particles.push({
+        x: canvas.width/2,
+        y: canvas.height - 120,
+        life: 8,
+        size: 40,
+        color: '#ffff00'
       });
     }
 
     function spawnEnemy() {
       enemies.push({
-        x: canvas.width + 50,
-        y: Math.random() * (canvas.height - 60) + 30,
-        width: 45,
-        height: 35,
-        speed: 2 + level * 0.5,
-        health: 2 + Math.floor(level / 2)
+        distance: 600 + Math.random() * 400,  // jarak awal
+        side: Math.random() * 200 - 100,      // posisi kiri/kanan
+        health: 3,
+        size: 1
       });
     }
 
     function createExplosion(x, y) {
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 25; i++) {
         particles.push({
-          x, y,
-          vx: Math.random() * 8 - 4,
-          vy: Math.random() * 8 - 4,
-          life: 30,
-          color: Math.random() > 0.5 ? '#ff8800' : '#ffff00'
+          x: x + Math.random()*60 - 30,
+          y: y + Math.random()*60 - 30,
+          life: 25,
+          size: Math.random()*12 + 6,
+          color: Math.random() > 0.5 ? '#ff8800' : '#ffdd00'
         });
       }
     }
@@ -104,52 +151,38 @@
     function update() {
       if (gameOver) return;
 
-      // Gerak player
-      if (keys['arrowleft'] || keys['a']) player.x -= player.speed;
-      if (keys['arrowright'] || keys['d']) player.x += player.speed;
-      if (keys['arrowup'] || keys['w']) player.y -= player.speed;
-      if (keys['arrowdown'] || keys['s']) player.y += player.speed;
-
-      // Batas layar
-      player.x = Math.max(0, Math.min(canvas.width - player.width, player.x));
-      player.y = Math.max(0, Math.min(canvas.height - player.height, player.y));
-
       // Update bullets
-      for (let i = bullets.length - 1; i >= 0; i--) {
+      for (let i = bullets.length-1; i >= 0; i--) {
         let b = bullets[i];
-        b.x += b.vx;
-        b.y += b.vy;
+        b.y -= b.speed;
         b.life--;
-        if (b.life <= 0 || b.x > canvas.width) bullets.splice(i, 1);
+        if (b.life <= 0) bullets.splice(i, 1);
       }
 
       // Update enemies
-      for (let i = enemies.length - 1; i >= 0; i--) {
+      for (let i = enemies.length-1; i >= 0; i--) {
         let e = enemies[i];
-        e.x -= e.speed;
+        e.distance -= 3.5;   // mendekat ke player
 
-        // Tabrakan dengan player
-        if (e.x < player.x + player.width && 
-            e.x + e.width > player.x &&
-            e.y < player.y + player.height && 
-            e.y + e.height > player.y) {
-          player.health -= 20;
-          createExplosion(e.x, e.y);
+        if (e.distance < 50) {
+          player.health -= 25;
+          createExplosion(canvas.width/2 + e.side*2, canvas.height/2);
           enemies.splice(i, 1);
           if (player.health <= 0) gameOver = true;
           continue;
         }
 
-        // Tabrakan dengan peluru
-        for (let j = bullets.length - 1; j >= 0; j--) {
+        // Cek hit oleh peluru
+        for (let j = bullets.length-1; j >= 0; j--) {
           let b = bullets[j];
-          if (b.x > e.x && b.x < e.x + e.width && 
-              b.y > e.y && b.y < e.y + e.height) {
+          let screenX = canvas.width/2 + e.side * (300 / e.distance);
+          if (Math.abs(screenX - canvas.width/2) < 40 && 
+              Math.abs(b.y - canvas.height/2) < 80) {
             e.health--;
             bullets.splice(j, 1);
             if (e.health <= 0) {
-              score += 10 * level;
-              createExplosion(e.x + 20, e.y + 15);
+              player.score += 50;
+              createExplosion(screenX, canvas.height/2 - 50);
               enemies.splice(i, 1);
             }
             break;
@@ -158,67 +191,80 @@
       }
 
       // Spawn musuh
-      if (Math.random() < 0.02 + level * 0.005) spawnEnemy();
+      if (Math.random() < 0.035) spawnEnemy();
 
-      // Level up
-      if (score > level * 150) level++;
+      // Update particles
+      for (let i = particles.length-1; i >= 0; i--) {
+        particles[i].life--;
+        if (particles[i].life <= 0) particles.splice(i, 1);
+      }
 
       document.getElementById('health').textContent = Math.max(0, player.health);
-      document.getElementById('score').textContent = score;
-      document.getElementById('level').textContent = level;
+      document.getElementById('score').textContent = player.score;
+      document.getElementById('enemies').textContent = enemies.length;
     }
 
     function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Langit + tanah
+      ctx.fillStyle = '#112233';
+      ctx.fillRect(0, 0, canvas.width, canvas.height/2);
+      ctx.fillStyle = '#334422';
+      ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
 
-      // Background sederhana
-      ctx.fillStyle = '#1a3a1a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Horizon
+      ctx.strokeStyle = '#556644';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height/2);
+      ctx.lineTo(canvas.width, canvas.height/2);
+      ctx.stroke();
 
-      // Gambar player tank
-      ctx.fillStyle = '#00cc00';
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-      ctx.fillStyle = '#008800';
-      ctx.fillRect(player.x + 25, player.y + 5, 25, 20); // turret
+      // Gambar musuh (semakin dekat = semakin besar)
+      for (let e of enemies) {
+        let scale = 800 / e.distance;
+        let x = canvas.width/2 + e.side * scale * 0.8;
+        let y = canvas.height/2;
+        let w = 80 * scale;
+        let h = 120 * scale;
 
-      // Peluru
+        // Bayangan musuh
+        ctx.fillStyle = 'rgba(0,0,0,0.4)';
+        ctx.fillRect(x - w/2 + 10, y + h/2 - 20, w * 0.8, 25);
+
+        // Badan musuh
+        ctx.fillStyle = '#aa2222';
+        ctx.fillRect(x - w/2, y - h/2, w, h);
+        
+        // Kepala
+        ctx.fillStyle = '#882222';
+        ctx.fillRect(x - w/3, y - h/2 - 30, w*0.7, 45);
+      }
+
+      // Peluru di layar
       ctx.fillStyle = '#ffff00';
       for (let b of bullets) {
-        ctx.fillRect(b.x, b.y, 8, 4);
+        let size = 12;
+        ctx.fillRect(b.x - 3, b.y, 6, size);
       }
 
-      // Musuh tank
-      ctx.fillStyle = '#cc0000';
-      for (let e of enemies) {
-        ctx.fillRect(e.x, e.y, e.width, e.height);
-        ctx.fillStyle = '#880000';
-        ctx.fillRect(e.x + 5, e.y + 8, 30, 18);
-        ctx.fillStyle = '#cc0000';
-      }
-
-      // Partikel ledakan
-      for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        ctx.globalAlpha = p.life / 30;
+      // Partikel
+      for (let p of particles) {
+        ctx.globalAlpha = p.life / 25;
         ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, 6, 6);
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life--;
-        if (p.life <= 0) particles.splice(i, 1);
+        let s = p.size || 8;
+        ctx.fillRect(p.x - s/2, p.y - s/2, s, s);
       }
       ctx.globalAlpha = 1;
 
+      // Senjata di bawah (simple gun)
+      ctx.fillStyle = '#555555';
+      ctx.fillRect(canvas.width/2 - 40, canvas.height - 140, 80, 140);
+      ctx.fillStyle = '#333333';
+      ctx.fillRect(canvas.width/2 - 25, canvas.height - 170, 50, 50);
+
       if (gameOver) {
-        ctx.fillStyle = 'rgba(0,0,0,0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#ff4444';
-        ctx.font = '50px Arial';
-        ctx.fillText('GAME OVER', 220, 230);
-        ctx.font = '30px Arial';
-        ctx.fillStyle = 'white';
-        ctx.fillText(`Skor Akhir: ${score}`, 280, 280);
-        ctx.fillText('Refresh halaman untuk main lagi', 200, 330);
+        document.getElementById('gameover').style.display = 'block';
+        document.getElementById('finalscore').textContent = player.score;
       }
     }
 
@@ -228,7 +274,6 @@
       requestAnimationFrame(gameLoop);
     }
 
-    // Mulai game
     gameLoop();
   </script>
 </body>
