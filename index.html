@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Video Background</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: sans-serif; background: black; }
+        canvas { display: block; margin: auto; border: 2px solid #fff; }
+        #video-bg {
+            position: fixed;
+            right: 0; bottom: 0;
+            min-width: 100%; min-height: 100%;
+            z-index: -1;
+            filter: brightness(0.6); /* Agar game lebih terlihat jelas */
+            object-fit: cover;
+        }
+        .score {
+            position: absolute; top: 20px; left: 50%;
+            transform: translateX(-50%);
+            color: white; font-size: 40px; font-weight: bold;
+            text-shadow: 2px 2px 4px #000;
+        }
+    </style>
+</head>
+<body>
+
+    <video autoplay muted loop id="video-bg">
+        <source src="1000267147.mp4" type="video/mp4">
+        Browser kamu tidak mendukung video.
+    </video>
+
+    <div class="score" id="scoreDisplay">0</div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        const scoreDisplay = document.getElementById("scoreDisplay");
+
+        // Ukuran Canvas (Portrait menyesuaikan video)
+        canvas.width = 360;
+        canvas.height = 640;
+
+        // Variabel Game
+        let bird = { x: 50, y: 150, width: 34, height: 24, gravity: 0.6, lift: -10, velocity: 0 };
+        let pipes = [];
+        let frame = 0;
+        let score = 0;
+        let gameActive = true;
+
+        function createPipe() {
+            let gap = 150;
+            let minPipeHeight = 50;
+            let pipeTopHeight = Math.floor(Math.random() * (canvas.height - gap - (minPipeHeight * 2))) + minPipeHeight;
+            pipes.push({
+                x: canvas.width,
+                top: pipeTopHeight,
+                bottom: canvas.height - pipeTopHeight - gap,
+                width: 50,
+                passed: false
+            });
+        }
+
+        function drawBird() {
+            ctx.fillStyle = "#FFD700"; // Warna burung kuning
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+        }
+
+        function drawPipes() {
+            ctx.fillStyle = "#2ecc71"; // Warna pipa hijau
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.top); // Atas
+                ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipe.width, pipe.bottom); // Bawah
+            });
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            bird.velocity += bird.gravity;
+            bird.y += bird.velocity;
+
+            if (frame % 100 === 0) createPipe();
+
+            pipes.forEach((pipe, index) => {
+                pipe.x -= 3;
+
+                // Cek Tabrakan
+                if (
+                    bird.x < pipe.x + pipe.width &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)
+                ) {
+                    resetGame();
+                }
+
+                // Skor
+                if (pipe.x + pipe.width < bird.x && !pipe.passed) {
+                    score++;
+                    pipe.passed = true;
+                    scoreDisplay.innerText = score;
+                }
+
+                if (pipe.x + pipe.width < 0) pipes.splice(index, 1);
+            });
+
+            // Cek Jatuh atau Keluar Atas
+            if (bird.y + bird.height > canvas.height || bird.y < 0) resetGame();
+
+            frame++;
+        }
+
+        function resetGame() {
+            bird.y = 150;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+            frame = 0;
+            scoreDisplay.innerText = score;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPipes();
+            drawBird();
+            update();
+            requestAnimationFrame(draw);
+        }
+
+        // Kontrol
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space") bird.velocity = bird.lift;
+        });
+
+        window.addEventListener("touchstart", () => {
+            bird.velocity = bird.lift;
+        });
+
+        draw();
+    </script>
+</body>
+</html>
