@@ -2,49 +2,30 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perang POV - Battlefield</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Perang POV - Mobile + PC</title>
   <style>
-    body {
-      margin: 0;
-      background: #000;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-    }
-    canvas {
-      display: block;
-      image-rendering: pixelated;
-    }
+    body { margin:0; padding:0; background:#000; overflow:hidden; touch-action: none; }
+    canvas { display:block; }
     .hud {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      color: white;
-      font-size: 18px;
-      text-shadow: 2px 2px 4px black;
-      pointer-events: none;
+      position: absolute; top: 10px; left: 10px; color: #0f0; font-size: 18px;
+      text-shadow: 0 0 8px black; pointer-events: none; z-index: 10;
     }
     .crosshair {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 20px;
-      height: 20px;
-      margin: -10px 0 0 -10px;
-      color: lime;
-      font-size: 30px;
-      pointer-events: none;
-      text-shadow: 0 0 6px lime;
+      position: absolute; top: 50%; left: 50%; color: lime; font-size: 30px;
+      transform: translate(-50%, -50%); pointer-events: none; z-index: 5;
+      text-shadow: 0 0 10px lime;
     }
-    .game-over {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      color: red;
-      font-size: 60px;
-      display: none;
-      text-align: center;
+    #joystick {
+      position: absolute; bottom: 20px; left: 20px; width: 120px; height: 120px;
+      background: rgba(255,255,255,0.15); border-radius: 50%; border: 3px solid rgba(0,255,0,0.3);
+      display: none; z-index: 20;
+    }
+    #fireBtn {
+      position: absolute; bottom: 40px; right: 30px; width: 90px; height: 90px;
+      background: rgba(255,0,0,0.6); border-radius: 50%; border: 4px solid #ff4444;
+      color: white; font-size: 16px; display: flex; align-items:center; justify-content:center;
+      z-index: 20; display: none;
     }
   </style>
 </head>
@@ -53,228 +34,10 @@
   <canvas id="game"></canvas>
   
   <div class="hud">
-    Nyawa: <span id="health">100</span> &nbsp;&nbsp;&nbsp;
-    Skor: <span id="score">0</span> &nbsp;&nbsp;&nbsp;
-    Musuh: <span id="enemies">0</span>
+    NYAWA: <span id="health">100</span> | 
+    SKOR: <span id="score">0</span>
   </div>
   <div class="crosshair">+</div>
 
-  <div class="game-over" id="gameover">
-    GAME OVER<br>
-    <span style="font-size:30px">Skor Akhir: <span id="finalscore">0</span></span><br><br>
-    <small>Klik untuk main lagi</small>
-  </div>
-
-  <script>
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    
-    // Ukuran landscape
-    function resize() {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    let player = { health: 100, score: 0 };
-    let bullets = [];
-    let enemies = [];
-    let particles = [];
-    let angle = 0;           // sudut pandang horizontal
-    let gameOver = false;
-
-    // Mouse lock untuk POV
-    canvas.addEventListener('click', () => {
-      if (!gameOver) canvas.requestPointerLock();
-      else location.reload();
-    });
-
-    document.addEventListener('pointerlockchange', () => {
-      if (!document.pointerLockElement) {
-        // Pause jika keluar dari pointer lock
-      }
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (document.pointerLockElement && !gameOver) {
-        angle -= e.movementX * 0.15; // sensitivitas mouse
-      }
-    });
-
-    // Tembak dengan klik kiri
-    canvas.addEventListener('mousedown', (e) => {
-      if (e.button === 0 && document.pointerLockElement && !gameOver) {
-        shoot();
-      }
-    });
-
-    function shoot() {
-      bullets.push({
-        x: canvas.width/2,
-        y: canvas.height/2 + 50,
-        speed: 25,
-        life: 40
-      });
-      
-      // Efek muzzle flash
-      particles.push({
-        x: canvas.width/2,
-        y: canvas.height - 120,
-        life: 8,
-        size: 40,
-        color: '#ffff00'
-      });
-    }
-
-    function spawnEnemy() {
-      enemies.push({
-        distance: 600 + Math.random() * 400,  // jarak awal
-        side: Math.random() * 200 - 100,      // posisi kiri/kanan
-        health: 3,
-        size: 1
-      });
-    }
-
-    function createExplosion(x, y) {
-      for (let i = 0; i < 25; i++) {
-        particles.push({
-          x: x + Math.random()*60 - 30,
-          y: y + Math.random()*60 - 30,
-          life: 25,
-          size: Math.random()*12 + 6,
-          color: Math.random() > 0.5 ? '#ff8800' : '#ffdd00'
-        });
-      }
-    }
-
-    function update() {
-      if (gameOver) return;
-
-      // Update bullets
-      for (let i = bullets.length-1; i >= 0; i--) {
-        let b = bullets[i];
-        b.y -= b.speed;
-        b.life--;
-        if (b.life <= 0) bullets.splice(i, 1);
-      }
-
-      // Update enemies
-      for (let i = enemies.length-1; i >= 0; i--) {
-        let e = enemies[i];
-        e.distance -= 3.5;   // mendekat ke player
-
-        if (e.distance < 50) {
-          player.health -= 25;
-          createExplosion(canvas.width/2 + e.side*2, canvas.height/2);
-          enemies.splice(i, 1);
-          if (player.health <= 0) gameOver = true;
-          continue;
-        }
-
-        // Cek hit oleh peluru
-        for (let j = bullets.length-1; j >= 0; j--) {
-          let b = bullets[j];
-          let screenX = canvas.width/2 + e.side * (300 / e.distance);
-          if (Math.abs(screenX - canvas.width/2) < 40 && 
-              Math.abs(b.y - canvas.height/2) < 80) {
-            e.health--;
-            bullets.splice(j, 1);
-            if (e.health <= 0) {
-              player.score += 50;
-              createExplosion(screenX, canvas.height/2 - 50);
-              enemies.splice(i, 1);
-            }
-            break;
-          }
-        }
-      }
-
-      // Spawn musuh
-      if (Math.random() < 0.035) spawnEnemy();
-
-      // Update particles
-      for (let i = particles.length-1; i >= 0; i--) {
-        particles[i].life--;
-        if (particles[i].life <= 0) particles.splice(i, 1);
-      }
-
-      document.getElementById('health').textContent = Math.max(0, player.health);
-      document.getElementById('score').textContent = player.score;
-      document.getElementById('enemies').textContent = enemies.length;
-    }
-
-    function draw() {
-      // Langit + tanah
-      ctx.fillStyle = '#112233';
-      ctx.fillRect(0, 0, canvas.width, canvas.height/2);
-      ctx.fillStyle = '#334422';
-      ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
-
-      // Horizon
-      ctx.strokeStyle = '#556644';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(0, canvas.height/2);
-      ctx.lineTo(canvas.width, canvas.height/2);
-      ctx.stroke();
-
-      // Gambar musuh (semakin dekat = semakin besar)
-      for (let e of enemies) {
-        let scale = 800 / e.distance;
-        let x = canvas.width/2 + e.side * scale * 0.8;
-        let y = canvas.height/2;
-        let w = 80 * scale;
-        let h = 120 * scale;
-
-        // Bayangan musuh
-        ctx.fillStyle = 'rgba(0,0,0,0.4)';
-        ctx.fillRect(x - w/2 + 10, y + h/2 - 20, w * 0.8, 25);
-
-        // Badan musuh
-        ctx.fillStyle = '#aa2222';
-        ctx.fillRect(x - w/2, y - h/2, w, h);
-        
-        // Kepala
-        ctx.fillStyle = '#882222';
-        ctx.fillRect(x - w/3, y - h/2 - 30, w*0.7, 45);
-      }
-
-      // Peluru di layar
-      ctx.fillStyle = '#ffff00';
-      for (let b of bullets) {
-        let size = 12;
-        ctx.fillRect(b.x - 3, b.y, 6, size);
-      }
-
-      // Partikel
-      for (let p of particles) {
-        ctx.globalAlpha = p.life / 25;
-        ctx.fillStyle = p.color;
-        let s = p.size || 8;
-        ctx.fillRect(p.x - s/2, p.y - s/2, s, s);
-      }
-      ctx.globalAlpha = 1;
-
-      // Senjata di bawah (simple gun)
-      ctx.fillStyle = '#555555';
-      ctx.fillRect(canvas.width/2 - 40, canvas.height - 140, 80, 140);
-      ctx.fillStyle = '#333333';
-      ctx.fillRect(canvas.width/2 - 25, canvas.height - 170, 50, 50);
-
-      if (gameOver) {
-        document.getElementById('gameover').style.display = 'block';
-        document.getElementById('finalscore').textContent = player.score;
-      }
-    }
-
-    function gameLoop() {
-      update();
-      draw();
-      requestAnimationFrame(gameLoop);
-    }
-
-    gameLoop();
-  </script>
-</body>
-</html>
+  <!-- Kontrol Mobile -->
+  <div id="joystick"></
