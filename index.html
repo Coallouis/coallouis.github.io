@@ -7,110 +7,76 @@
   <style>
     body { margin:0; padding:0; background:#000; overflow:hidden; touch-action:none; }
     canvas { display:block; }
-    .hud { position:absolute; top:10px; left:10px; color:#0f0; font-size:18px; text-shadow:0 0 8px black; z-index:10; }
-    .crosshair { position:absolute; top:50%; left:50%; color:lime; font-size:32px; transform:translate(-50%,-50%); pointer-events:none; z-index:5; }
-    #controls {
-      position: absolute; bottom: 20px; left: 20px; width: 130px; height: 130px;
-      background: rgba(255,255,255,0.1); border: 3px solid rgba(0,255,0,0.4); border-radius: 50%; display: none;
+    .hud { 
+      position:absolute; top:10px; left:10px; color:#0f0; font-size:20px; 
+      text-shadow:0 0 8px black; z-index:10; 
     }
-    #fire {
-      position: absolute; bottom: 40px; right: 30px; width: 100px; height: 100px;
-      background: rgba(255,50,50,0.7); border: 5px solid #ff6666; border-radius: 50%;
-      color: white; font-size: 18px; display: none; align-items:center; justify-content:center; z-index: 20;
+    .crosshair { 
+      position:absolute; top:50%; left:50%; color:lime; font-size:35px; 
+      transform:translate(-50%,-50%); pointer-events:none; z-index:5; 
     }
-    .info { position:absolute; bottom:10px; width:100%; text-align:center; color:#aaa; font-size:14px; }
+    .info {
+      position:absolute; bottom:15px; width:100%; text-align:center; 
+      color:#aaa; font-size:15px; z-index:10;
+    }
+    .left { position:absolute; left:0; top:0; width:50%; height:100%; z-index:5; }
+    .right { position:absolute; right:0; top:0; width:50%; height:100%; z-index:5; }
   </style>
 </head>
 <body>
   <canvas id="game"></canvas>
   <div class="hud">NYAWA: <span id="health">100</span> | SKOR: <span id="score">0</span></div>
   <div class="crosshair">+</div>
-  
-  <div id="controls"></div>
-  <div id="fire">TEMBAK</div>
-  <div class="info">PC: Gerakkan Mouse + Klik Tembak | HP: Geser kiri putar, Tekan kanan tembak</div>
+  <div class="info">Klik KIRI Layar = Putar | Klik KANAN Layar = Tembak</div>
+
+  <!-- Area klik -->
+  <div class="left" id="left"></div>
+  <div class="right" id="right"></div>
 
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
-    let w, h;
-
-    function resize() {
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    
+    window.addEventListener('resize', () => {
       w = canvas.width = window.innerWidth;
       h = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+    });
 
     let player = { health: 100, score: 0, angle: 0 };
-    let bullets = [], enemies = [], particles = [], gameOver = false;
-    let isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
+    let bullets = [];
+    let enemies = [];
+    let particles = [];
+    let gameOver = false;
 
-    // Kontrol
-    let angleSpeed = 0;
-    let shooting = false;
+    const leftArea = document.getElementById('left');
+    const rightArea = document.getElementById('right');
 
-    // PC - Mouse Lock
-    canvas.addEventListener('click', () => {
-      if (!isMobile) canvas.requestPointerLock();
-      else shoot();
-    });
+    // Kontrol Klik
+    let isTurningLeft = false;
+    let isTurningRight = false;
+    let isShooting = false;
 
-    document.addEventListener('pointerlockchange', () => {});
-    document.addEventListener('mousemove', e => {
-      if (document.pointerLockElement) {
-        player.angle -= e.movementX * 0.25;
-      }
-    });
+    leftArea.addEventListener('mousedown', () => isTurningLeft = true);
+    leftArea.addEventListener('mouseup', () => isTurningLeft = false);
+    leftArea.addEventListener('touchstart', () => isTurningLeft = true);
+    leftArea.addEventListener('touchend', () => isTurningLeft = false);
 
-    // Mobile Controls
-    const joy = document.getElementById('controls');
-    const fireBtn = document.getElementById('fire');
-    if (isMobile) {
-      joy.style.display = 'block';
-      fireBtn.style.display = 'flex';
-    }
-
-    let joyTouch = null;
-    canvas.addEventListener('touchstart', e => {
-      for (let t of e.touches) {
-        if (t.clientX > w * 0.5) {
-          shooting = true;
-        } else if (!joyTouch) {
-          joyTouch = t.identifier;
-        }
-      }
-    });
-
-    canvas.addEventListener('touchmove', e => {
-      e.preventDefault();
-      for (let t of e.touches) {
-        if (t.identifier === joyTouch) {
-          const dx = t.clientX - (w * 0.15);
-          angleSpeed = dx * 0.008;
-        }
-      }
-    });
-
-    canvas.addEventListener('touchend', () => {
-      shooting = false;
-      angleSpeed = 0;
-      joyTouch = null;
-    });
-
-    fireBtn.addEventListener('touchstart', () => shooting = true);
-    fireBtn.addEventListener('touchend', () => shooting = false);
+    rightArea.addEventListener('mousedown', () => isShooting = true);
+    rightArea.addEventListener('mouseup', () => isShooting = false);
+    rightArea.addEventListener('touchstart', () => isShooting = true);
+    rightArea.addEventListener('touchend', () => isShooting = false);
 
     function shoot() {
-      if (gameOver) return;
-      bullets.push({life: 28});
-      particles.push({life: 5, type: 'flash'});
+      bullets.push({life: 25});
+      particles.push({life: 6, type: 'flash'});
     }
 
     function spawnEnemy() {
       enemies.push({
-        dist: 800 + Math.random() * 600,
-        side: Math.random() * 180 - 90,
+        dist: 900 + Math.random() * 400,
+        side: Math.random() * 200 - 100,
         health: 3
       });
     }
@@ -118,76 +84,75 @@
     function update() {
       if (gameOver) return;
 
-      player.angle += angleSpeed;
+      // Gerak putar
+      if (isTurningLeft) player.angle -= 3.5;
+      if (isTurningRight) player.angle += 3.5;  // (untuk cadangan)
 
-      // Auto tembak saat tekan tombol
-      if (shooting && Math.random() < 0.45) shoot();
+      // Tembak
+      if (isShooting && Math.random() < 0.5) shoot();
 
-      // Update bullets
+      // Update peluru
       for (let i = bullets.length - 1; i >= 0; i--) {
         if (--bullets[i].life <= 0) bullets.splice(i, 1);
       }
 
-      // Update enemies
+      // Update musuh
       for (let i = enemies.length - 1; i >= 0; i--) {
         let e = enemies[i];
-        e.dist -= 3.2;
+        e.dist -= 3.5;
 
-        if (e.dist < 100) {
-          player.health -= 20;
+        if (e.dist < 120) {
+          player.health -= 25;
           enemies.splice(i, 1);
           if (player.health <= 0) gameOver = true;
         }
       }
 
-      // Spawn
-      if (Math.random() < 0.055) spawnEnemy();
+      if (Math.random() < 0.06) spawnEnemy();
 
       document.getElementById('health').textContent = Math.max(0, Math.floor(player.health));
       document.getElementById('score').textContent = player.score;
     }
 
     function draw() {
-      // Background
-      ctx.fillStyle = '#0a1825';
+      // Langit & Tanah
+      ctx.fillStyle = '#0a1a30';
       ctx.fillRect(0, 0, w, h/2);
-      ctx.fillStyle = '#1a2a10';
+      ctx.fillStyle = '#1f2a10';
       ctx.fillRect(0, h/2, w, h/2);
 
-      // Draw enemies
+      // Musuh
       for (let e of enemies) {
-        let scale = 900 / e.dist;
-        let x = w/2 + e.side * scale * 0.85;
-        let size = 95 * scale;
+        let scale = 1000 / e.dist;
+        let x = w/2 + e.side * scale * 0.8;
+        let sizeW = 110 * scale;
+        let sizeH = 190 * scale;
 
-        ctx.fillStyle = '#5c1f1f';
-        ctx.fillRect(x - size/2, h/2 - size*0.9, size, size*1.8);
-        ctx.fillStyle = '#2f1a1a';
-        ctx.fillRect(x - size*0.35, h/2 - size*1.1, size*0.7, size*0.5);
+        ctx.fillStyle = '#6b2525';
+        ctx.fillRect(x - sizeW/2, h/2 - sizeH/2, sizeW, sizeH);
+        ctx.fillStyle = '#3a1f1f';
+        ctx.fillRect(x - sizeW/3.5, h/2 - sizeH/2 - 35, sizeW*0.55, sizeH*0.4);
       }
 
       // Senjata
-      ctx.fillStyle = '#1f1f1f';
-      ctx.fillRect(w/2 - 38, h - 170, 76, 220);
+      ctx.fillStyle = '#222';
+      ctx.fillRect(w/2 - 40, h - 180, 80, 250);
 
-      // Flash
+      // Muzzle Flash
       for (let p of particles) {
         if (p.type === 'flash' && p.life > 0) {
-          ctx.fillStyle = `rgba(255, 230, 100, ${p.life/6})`;
-          ctx.fillRect(w/2 - 30, h - 200, 60, 80);
+          ctx.fillStyle = `rgba(255,240,80,${p.life/7})`;
+          ctx.fillRect(w/2 - 35, h - 210, 70, 90);
         }
       }
 
       if (gameOver) {
-        ctx.fillStyle = 'rgba(0,0,0,0.92)';
+        ctx.fillStyle = 'rgba(0,0,0,0.9)';
         ctx.fillRect(0,0,w,h);
-        ctx.fillStyle = '#ff2222';
-        ctx.font = 'bold 65px Arial';
+        ctx.fillStyle = '#ff0000';
+        ctx.font = 'bold 70px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', w/2, h/2 - 20);
-        ctx.fillStyle = '#fff';
-        ctx.font = '30px Arial';
-        ctx.fillText(`Skor: ${player.score}`, w/2, h/2 + 40);
+        ctx.fillText('GAME OVER', w/2, h/2);
       }
     }
 
@@ -196,6 +161,7 @@
       draw();
       requestAnimationFrame(loop);
     }
+
     loop();
   </script>
 </body>
