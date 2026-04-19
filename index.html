@@ -1,73 +1,229 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>Fabian Al Hadi</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: white;
-    }
-    .container {
-      text-align: center;
-      padding: 50px;
-    }
-    img {
-      width: 150px;
-      border-radius: 50%;
-      border: 3px solid white;
-    }
-    h1 {
-      margin-top: 15px;
-      font-size: 32px;
-    }
-    p {
-      color: #cbd5e1;
-    }
-    .btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 20px;
-      background: #38bdf8;
-      color: black;
-      text-decoration: none;
-      border-radius: 5px;
-    }
-    .section {
-      padding: 40px;
-      text-align: center;
-    }
-    .card {
-      background: #1e293b;
-      padding: 20px;
-      margin: 10px;
-      border-radius: 10px;
-      display: inline-block;
-      width: 200px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pahlawan Sakura - Pong Jepang</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222; /* Latar belakang gelap di luar game */
+            color: #f8bbd0; /* Warna pink sakura untuk teks */
+            font-family: 'Georgia', serif; /* Font sedikit kuno agar tematik */
+            overflow: hidden; /* Mencegah scroll */
+        }
+        main {
+            box-shadow: 0 0 20px rgba(255, 183, 197, 0.5); /* Efek cahaya pink di sekitar canvas */
+        }
+    </style>
 </head>
 <body>
 
-  <div class="container">
-    <img src="https://via.placeholder.com/150">
-    <h1>Fabian Al Hadi</h1>
-    <p>Pelajar | Belajar Web Developer</p>
-    <a href="#" class="btn">Hubungi Saya</a>
-  </div>
+<script>
+// ============================================
+// KONFIGURASI DAN VARIABEL GLOBAL
+// ============================================
 
-  <div class="section">
-    <h2>Skill</h2>
-    <div class="card">HTML</div>
-    <div class="card">CSS</div>
-    <div class="card">JavaScript</div>
-  </div>
+// Properti Bola (sekarang Bunga Sakura)
+let bola = {
+  x: 0,
+  y: 0,
+  kecepatanX: 6,
+  kecepatanY: 4,
+  ukuran: 16
+};
 
-  <div class="section">
-    <h2>Tentang Saya</h2>
-    <p>Saya sedang belajar membuat website dan ingin menjadi web developer di masa depan.</p>
-  </div>
+// Properti Papan Pemain (sekarang Kayu Gerbang Torii)
+let pemain = {
+  lebar: 15,
+  tinggi: 100,
+  x: 30, // Jarak dari kiri
+  y: 0,
+  warna: '#b71c1c' // Merah tua khas Torii
+};
 
+let skor = 0;
+let gameMulai = false;
+let fontJepang; // Opsional: untuk teks custom
+
+// ============================================
+// FUNGSI UTAMA P5.JS
+// ============================================
+
+// Fungsi setup() berjalan SATU KALI saat game dimuat
+function setup() {
+  createCanvas(800, 500); // Membuat area game
+  
+  // Memposisikan objek di tengah saat awal
+  bola.x = width / 2;
+  bola.y = height / 2;
+  pemain.y = height / 2 - pemain.tinggi / 2;
+  
+  textAlign(CENTER, CENTER);
+  textSize(24);
+}
+
+// Fungsi draw() berjalan TERUS-MENERUS (looping)
+function draw() {
+  // 1. Gambar Latar Belakang (Tema Malam Musim Semi)
+  latarBelakangJepang();
+
+  if (!gameMulai) {
+    // Tampilan Menu Awal
+    tampilkanMenuUtama();
+  } else {
+    // Logika Inti Game
+    jalankanGame();
+  }
+}
+
+// ============================================
+// LOGIKA GAME DAN VISUAL
+// ============================================
+
+function latarBelakangJepang() {
+  background('#1a237e'); // Biru malam (Indigo)
+  
+  // Gambar Bulan Purnama Besar
+  noStroke();
+  fill('#fff9c4'); // Kuning pucat
+  ellipse(width * 0.8, height * 0.2, 80, 80);
+  
+  // Gambar "Tanah" di bawah (Rumput malam)
+  fill('#1b5e20');
+  rect(0, height - 20, width, 20);
+}
+
+function tampilkanMenuUtama() {
+  fill(255);
+  textSize(40);
+  text("PAHLAWAN SAKURA", width / 2, height / 2 - 40);
+  textSize(20);
+  text("Gunakan Mouse untuk menggerakkan papan merah.", width / 2, height / 2 + 10);
+  fill('#f8bbd0');
+  text("Klik untuk Mulai", width / 2, height / 2 + 50);
+}
+
+function jalankanGame() {
+  // 2. Kontrol Gerakan Pemain (Ikut Mouse)
+  // mouseY adalah posisi vertikal kursor. Kita kurangi setengah tinggi pemain agar kursor di tengah.
+  pemain.y = constrain(mouseY - pemain.tinggi / 2, 0, height - pemain.tinggi);
+
+  // 3. Gerakkan Bola
+  bola.x += bola.kecepatanX;
+  bola.y += bola.kecepatanY;
+
+  // 4. Deteksi Tabrakan (Collision)
+  
+  // Tabrakan Atas dan Bawah
+  if (bola.y < bola.ukuran || bola.y > height - bola.ukuran) {
+    bola.kecepatanY *= -1; // Balikkan arah vertikal
+  }
+  
+  // Tabrakan Tembok Kanan
+  if (bola.x > width - bola.ukuran) {
+    bola.kecepatanX *= -1; // Balikkan arah horizontal
+  }
+
+  // Tabrakan dengan Papan Pemain (Kiri)
+  // Cek apakah bola berada di rentang horizontal papan
+  if (bola.x - bola.ukuran / 2 < pemain.x + pemain.lebar && bola.x > pemain.x) {
+    // Cek apakah bola berada di rentang vertikal papan
+    if (bola.y > pemain.y && bola.y < pemain.y + pemain.tinggi) {
+      bola.kecepatanX *= -1.05; // Memantul dan sedikit LEBIH CEPAT
+      bola.x = pemain.x + pemain.lebar + bola.ukuran / 2; // Cegah bola tersangkut
+      skor++; // Tambah skor
+    }
+  }
+
+  // 5. Game Over (Bola lewat kiri)
+  if (bola.x < 0) {
+    isiSkorAkhirDanReset();
+  }
+
+  // 6. Gambar Objek
+  gambarPemain();
+  gambarBolaSakura();
+  tampilkanSkor();
+}
+
+// --- Fungsi Penggambaran ---
+
+function gambarPemain() {
+  // Gambar Papan seperti Balok Kayu Torii
+  fill(pemain.warna);
+  noStroke();
+  rect(pemain.x, pemain.y, pemain.lebar, pemain.tinggi, 5); // 5 adalah radius sudut bulat
+  
+  // Tambahan detail kecil di atas dan bawah papan agar mirip gerbang
+  fill('#000'); // Hitam untuk bagian atas
+  rect(pemain.x - 5, pemain.y - 5, pemain.lebar + 10, 8);
+  rect(pemain.x - 5, pemain.y + pemain.tinggi - 3, pemain.lebar + 10, 8);
+}
+
+function gambarBolaSakura() {
+  // Gambar Bunga Sakura sederhana (kuning di tengah, pink di luar)
+  push(); // Simpan pengaturan gambar
+  translate(bola.x, bola.y); // Pindahkan koordinat ke pusat bola
+  
+  // Kelopak Sakura (sederhana)
+  fill('#f8bbd0'); // Pink muda
+  noStroke();
+  for (let i = 0; i < 5; i++) {
+    ellipse(0, 0, bola.ukuran + 5, bola.ukuran - 2);
+    rotate(PI / 2.5); // Putar untuk menggambar kelopak berikutnya
+  }
+  
+  // Pusat Bunga
+  fill('#fff176'); // Kuning
+  ellipse(0, 0, bola.ukuran / 2, bola.ukuran / 2);
+  pop(); // Kembalikan pengaturan gambar
+}
+
+function tampilkanSkor() {
+  fill(255);
+  textSize(32);
+  // Simbol bunga sakura kecil di dekat skor (Unicode)
+  text("🌸 Skor: " + skor, width - 150, 40);
+}
+
+// ============================================
+// INTERAKSI INPUT
+// ============================================
+
+function mousePressed() {
+  // Klik mouse untuk memulai game pertama kali
+  if (!gameMulai) {
+    gameMulai = true;
+    skor = 0;
+  }
+}
+
+// ============================================
+// LOGIKA GAME OVER
+// ============================================
+
+function isiSkorAkhirDanReset() {
+  // Ini fungsi sederhana saat game berakhir. Bisa ditingkatkan dengan menu.
+  alert("🌸 GAME OVER! Bunga sakura terjatuh... \n🌸 Skor Akhir: " + skor);
+  
+  // Reset posisi
+  bola.x = width / 2;
+  bola.y = height / 2;
+  bola.kecepatanX = 6; // Reset kecepatan
+  bola.kecepatanY = 4;
+  skor = 0;
+  gameMulai = false; // Kembali ke menu utama
+}
+
+</script>
 </body>
 </html>
