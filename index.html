@@ -1,119 +1,42 @@
-from ursina import *
-from ursina.prefabs.first_person_controller import FirstPersonController
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Gallery Neon Purple</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
 
-# --- INISIALISASI GAME ---
-app = Ursina()
-
-# --- LINGKUNGAN (LANDSCAPE) ---
-# Langit biru cerah
-Sky()
-
-# Tanah (Grass)
-ground = Entity(
-    model='plane',
-    collider='box',
-    scale=150,
-    texture='grass',
-    texture_scale=(30, 30)
-)
-
-# Objek tambahan (Dinding Pelindung)
-for i in range(10):
-    Entity(
-        model='cube',
-        collider='box',
-        position=(random.uniform(-20, 20), 1, random.uniform(20, 50)),
-        scale=(random.uniform(2, 5), 3, 1),
-        texture='brick',
-        color=color.dark_gray
-    )
-
-# --- PEMAIN (POV) ---
-player = FirstPersonController()
-player.cursor.visible = False  # Sembunyikan kursor biar fokus menembak
-player.gravity = 1
-player.speed = 10
-
-# Model Senjata (Sederhana tapi fungsional)
-weapon = Entity(
-    model='cube',
-    parent=camera.ui,
-    scale=(0.4, 0.2, 1.5),
-    position=(0.5, -0.4),
-    color=color.black,
-    on_cooldown=False
-)
-
-# --- LOGIKA MUSUH ---
-enemies = []
-
-def spawn_enemy():
-    # Munculkan musuh di area depan pemain
-    enemy = Entity(
-        model='cube',
-        color=color.red,
-        scale=(1, 2, 1),
-        position=(random.uniform(-30, 30), 1, random.uniform(30, 60)),
-        collider='box',
-        health=3,
-        speed=random.uniform(3, 6)
-    )
-    enemies.append(enemy)
-
-# Spawn 8 musuh di awal
-for i in range(8):
-    spawn_enemy()
-
-def update():
-    # Gerakkan musuh mengejar pemain
-    for e in enemies:
-        e.look_at(player.position)
-        e.position += e.forward * e.speed * time.dt
+    <div class="gallery-container">
+        <h1 class="neon-text">Neon <span>Motion</span></h1>
         
-        # Jarak aman (Game Over jika kena)
-        if distance(e, player) < 1.5:
-            print_on_screen("YOU DIED!", position=(-0.1, 0), scale=2, color=color.red)
-            # application.pause() # Aktifkan jika ingin game berhenti pas mati
+        <div class="grid-wrapper">
+            
+            <div class="video-card large-span">
+                <video autoplay muted loop playsinline class="glitch-video">
+                    <source src="https://i.imgur.com/vHq9P8N.mp4" type="video/mp4">
+                    Browser kamu tidak mendukung tag video.
+                </video>
+                <div class="overlay">
+                    <p>SYSTEM ONLINE</p>
+                </div>
+            </div>
 
-# --- LOGIKA MENEMBAK ---
-def input(key):
-    if key == 'left mouse down':
-        shoot()
+            <div class="video-card">
+                <video autoplay muted loop playsinline>
+                    <source src="https://i.imgur.com/mO24vFw.mp4" type="video/mp4">
+                </video>
+            </div>
 
-def shoot():
-    if not weapon.on_cooldown:
-        weapon.on_cooldown = True
-        
-        # Efek Recoil (Senjata mundur)
-        weapon.animate_position((0.5, -0.3, 1.3), duration=0.1)
-        invoke(reset_weapon, delay=0.1)
-        
-        # Muzzle Flash (Kilatan tembakan)
-        flash = Entity(model='sphere', color=color.yellow, scale=0.2, position=player.position + camera.forward * 2 + Vec3(0,1.5,0))
-        destroy(flash, delay=0.05)
+            <div class="video-card">
+                <video autoplay muted loop playsinline>
+                    <source src="https://i.imgur.com/rNnO1E0.mp4" type="video/mp4">
+                </video>
+            </div>
 
-        # Cek apakah tembakan kena musuh
-        hit_info = raycast(camera.world_position, camera.forward, distance=100)
-        if hit_info.hit:
-            if hit_info.entity in enemies:
-                target = hit_info.entity
-                target.health -= 1
-                target.shake() # Efek kena pukul
-                
-                if target.health <= 0:
-                    enemies.remove(target)
-                    destroy(target)
-                    spawn_enemy() # Ganti musuh yang mati dengan yang baru
-        
-        # Kecepatan tembak (Fire rate)
-        invoke(set_cooldown, delay=0.15)
+        </div>
+    </div>
 
-def reset_weapon():
-    weapon.position = (0.5, -0.4)
-
-def set_cooldown():
-    weapon.on_cooldown = False
-
-# Jalankan Game
-app.run()
-                  
+</body>
+</html>
