@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Cyber Gallery</title>
+    <title>Neon Double Gallery</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -13,33 +13,26 @@
         
         <div class="grid-wrapper">
             
-            <div class="video-card large-span">
-                <iframe 
-                    src="https://streamable.com/e/c8ki86?autoplay=1&muted=1&nocontrols=1" 
-                    frameborder="0" 
-                    width="100%" 
-                    height="100%" 
-                    allow="autoplay" 
-                    style="width:100%;height:100%;position:absolute;left:0;top:0;"
-                    allowfullscreen>
-                </iframe>
+            <div class="video-card">
+                <video autoplay muted loop playsinline>
+                    <source src="https://streamable.com/e/n0moy9?autoplay=1&muted=1" type="video/mp4">
+                    <source src="https://cdn-cf-east.streamable.com/video/mp4/n0moy9.mp4" type="video/mp4">
+                    Browser tidak mendukung video.
+                </video>
                 <div class="overlay">
-                    <p>SYSTEM_STREAM: ONLINE</p>
+                    <p>FEED_01: ACTIVE</p>
                 </div>
             </div>
 
             <div class="video-card">
-                <div class="placeholder-content">
-                    <p>WAITING FOR FEED...</p>
+                <video autoplay muted loop playsinline>
+                    <source src="https://streamable.com/e/c8ki86?autoplay=1&muted=1" type="video/mp4">
+                    <source src="https://cdn-cf-east.streamable.com/video/mp4/c8ki86.mp4" type="video/mp4">
+                    Browser tidak mendukung video.
+                </video>
+                <div class="overlay">
+                    <p>FEED_02: ACTIVE</p>
                 </div>
-                <div class="overlay"><p>SUB_01</p></div>
-            </div>
-
-            <div class="video-card">
-                <div class="placeholder-content">
-                    <p>WAITING FOR FEED...</p>
-                </div>
-                <div class="overlay"><p>SUB_02</p></div>
             </div>
 
         </div>
